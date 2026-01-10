@@ -44,10 +44,34 @@ make test
 ### Available Commands
 
 ```bash
-make install           # Create virtual environment and install dependencies with uv
-make test              # Run tests with pytest and coverage
-make check             # Run all checks (lock file, pre-commit, mypy, deptry)
+make install                    # Create virtual environment and install dependencies with uv
+make test                       # Run tests with pytest and coverage
+make check                      # Run all checks (lock file, pre-commit, mypy, deptry)
+make cleanup-branches-dry-run   # Show branches that would be deleted (dry run)
+make cleanup-branches           # Delete all remote branches except main
 ```
+
+### Branch Cleanup
+
+To help maintain a clean repository, we provide a script to delete all remote branches except `main`:
+
+```bash
+# Preview what branches would be deleted (recommended first)
+make cleanup-branches-dry-run
+
+# Delete all remote branches except main (requires confirmation)
+make cleanup-branches
+
+# Or use the script directly with options
+./scripts/cleanup-branches.sh --dry-run
+./scripts/cleanup-branches.sh --help
+```
+
+**Important notes:**
+- The script will **never** delete the `main` branch (it's protected)
+- A confirmation prompt will be shown before any branches are deleted
+- Use `--dry-run` first to preview the branches that would be deleted
+- This is useful for cleaning up old feature branches after they've been merged
 
 ## 🔧 Development Guidelines
 
