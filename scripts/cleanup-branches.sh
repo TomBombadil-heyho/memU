@@ -13,6 +13,7 @@ NC='\033[0m' # No Color
 # Default values
 DRY_RUN=false
 PROTECTED_BRANCH="main"
+REMOTE_NAME="origin"
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
@@ -45,12 +46,12 @@ echo ""
 
 # Fetch latest remote information
 echo "Fetching latest remote information..."
-git fetch --prune origin
+git fetch --prune "$REMOTE_NAME"
 
 # Get all remote branches except main and HEAD
 echo ""
 echo "Finding branches to delete..."
-branches_to_delete=$(git branch -r | grep -v "/${PROTECTED_BRANCH}$" | grep -v "HEAD" | sed 's/origin\///' | tr -d ' ')
+branches_to_delete=$(git branch -r | grep "^[[:space:]]*${REMOTE_NAME}/" | grep -v "/${PROTECTED_BRANCH}$" | grep -v "HEAD" | sed "s/${REMOTE_NAME}\///" | tr -d ' ')
 
 if [ -z "$branches_to_delete" ]; then
     echo -e "${GREEN}No branches to delete. Only '${PROTECTED_BRANCH}' exists.${NC}"
@@ -60,12 +61,14 @@ fi
 # Display branches that will be deleted
 echo ""
 echo -e "${YELLOW}The following branches will be deleted:${NC}"
-echo "$branches_to_delete" | while read -r branch; do
-    echo "  - $branch"
-done
+while IFS= read -r branch; do
+    if [ -n "$branch" ]; then
+        echo "  - $branch"
+    fi
+done <<< "$branches_to_delete"
 
-# Count branches
-branch_count=$(echo "$branches_to_delete" | wc -l)
+# Count branches - handle empty case properly
+branch_count=$(echo "$branches_to_delete" | grep -c "^")
 echo ""
 echo -e "${YELLOW}Total: $branch_count branch(es)${NC}"
 
@@ -90,10 +93,11 @@ echo "Deleting branches..."
 deleted_count=0
 failed_count=0
 
-echo "$branches_to_delete" | while read -r branch; do
+# Use process substitution to avoid subshell issue
+while IFS= read -r branch; do
     if [ -n "$branch" ]; then
         echo -n "Deleting $branch... "
-        if git push origin --delete "$branch" 2>/dev/null; then
+        if git push "$REMOTE_NAME" --delete "$branch" 2>/dev/null; then
             echo -e "${GREEN}✓${NC}"
             ((deleted_count++))
         else
@@ -101,7 +105,7 @@ echo "$branches_to_delete" | while read -r branch; do
             ((failed_count++))
         fi
     fi
-done
+done <<< "$branches_to_delete"
 
 echo ""
 echo -e "${GREEN}Branch cleanup completed!${NC}"
